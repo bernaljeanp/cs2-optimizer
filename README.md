@@ -50,7 +50,9 @@ Para practicar spray: crea una partida offline y escribe `exec practice` en la c
 - Te muestra tu estilo (agresivo, equilibrado o preciso), tu porcentaje de aciertos y si en tracking vas por detrás o por delante del objetivo.
 - Con **A** aplicas la sensibilidad recomendada al `autoexec.cfg`. Repite el test 2–3 veces antes de cambiarla.
 
-## Medidor de DPI
+## Medidor de DPI (opcional)
+
+**No hace falta para optimizar:** el test de sensibilidad trabaja directamente con los movimientos de tu ratón, igual que CS2. El DPI solo sirve para mostrar eDPI y cm/360 y compararte con otros jugadores. Sin una referencia física ningún programa puede saber cuánto mueves la mano, así que medirlo requiere una regla.
 
 `python dpi_meter.py`, o el botón *Medir DPI real* en la interfaz. Pon una regla, pulsa ESPACIO, mueve el ratón en línea recta la distancia indicada y pulsa ESPACIO otra vez. Con 3 medidas usa la mediana y rellena el DPI en la interfaz. Lee Raw Input, igual que CS2, así que no le afectan la aceleración ni la velocidad del puntero de Windows.
 

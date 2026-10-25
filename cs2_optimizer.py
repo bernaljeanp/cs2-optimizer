@@ -429,7 +429,7 @@ def run(o, log=print):
     if recoil:
         log(f"   eDPI {recoil[0]} | {recoil[1]} cm/360. {recoil[2]}")
     else:
-        log("   Mide tu DPI con el medidor (python dpi_meter.py o el boton de la GUI) para calcular tu eDPI.")
+        log("   Sin DPI no calculo eDPI (es solo informativo). Para ajustar tu sensibilidad usa el Test de sensibilidad.")
     log("   Entrena con practice.cfg en el juego y con el entrenador fuera del juego (recoil_trainer.py).")
     log(f"\n== FPS ==  fps_max {cap}" + ("" if o.fps_low else f"\n   {BENCH_HELP}"))
 

@@ -23,7 +23,7 @@ def main():
     fields = {}
     dpi, dpi_src = core.detect_dpi()
     sens, sens_src = core.detect_sens()
-    for col, (key, label, default) in enumerate([("dpi", "DPI", dpi or ""), ("sens", "Sensibilidad", sens or ""),
+    for col, (key, label, default) in enumerate([("dpi", "DPI (opcional)", dpi or ""), ("sens", "Sensibilidad", sens or ""),
                                                  ("fps_avg", "FPS medio", ""), ("fps_low", "1% low", "")]):
         tk.Label(form, text=label, fg=FG, bg=BG).grid(row=0, column=col, sticky="w", padx=4)
         fields[key] = tk.Entry(form, width=10)
@@ -116,11 +116,13 @@ def main():
     run_btn = tk.Button(bar, text="Analizar y optimizar", command=analyze, bg="#2a6", fg="white", width=20)
     run_btn.pack(pady=2)
     tk.Button(bar, text="Entrenador de recoil", command=trainer, bg="#246", fg="white", width=20).pack(pady=2)
-    tk.Button(bar, text="Medir DPI real", command=meter, bg="#246", fg="white", width=20).pack(pady=2)
     tk.Button(bar, text="Test de sensibilidad", command=sens_check, bg="#a52", fg="white", width=20).pack(pady=2)
-    out.insert("end", f"DPI detectado: {dpi or 'desconocido'} ({dpi_src or 'usa Medir DPI real'})\n"
-                      f"Sensibilidad detectada: {sens or 'desconocida'} ({sens_src or 'no encontre la config de CS2'})\n"
-                      "Pulsa 'Analizar y optimizar'.\n" + core.BENCH_HELP + "\n")
+    tk.Button(bar, text="Medir DPI (opcional)", command=meter, bg="#333", fg="#aaa", width=20).pack(pady=2)
+    out.insert("end", f"Sensibilidad detectada: {sens or 'desconocida'} ({sens_src or 'no encontre la config de CS2'})\n"
+                      f"DPI: {dpi or 'desconocido'}" + (f" ({dpi_src})" if dpi else "") +
+                      ". No hace falta: el Test de sensibilidad trabaja directo con tu raton.\n"
+                      "1. 'Test de sensibilidad' lee tu estilo y te recomienda sensibilidad.\n"
+                      "2. 'Analizar y optimizar' configura red, video y Windows.\n" + core.BENCH_HELP + "\n")
     poll()
     root.mainloop()
 
