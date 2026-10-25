@@ -86,6 +86,17 @@ class RawMouse:
             u.DispatchMessageW(ctypes.byref(msg))
 
 
+_SHARED = None
+
+
+def shared_mouse():
+    """Un solo RawMouse por proceso: Windows solo entrega Raw Input a una ventana por tipo de dispositivo."""
+    global _SHARED
+    if _SHARED is None:
+        _SHARED = RawMouse()
+    return _SHARED
+
+
 def dpi_from(counts, cm):
     return counts / (cm / 2.54)
 
@@ -98,7 +109,7 @@ class DpiMeter(tk.Frame):
     def __init__(self, master, on_result=None):
         super().__init__(master, bg="#111", padx=16, pady=12)
         self.on_result, self.results, self.measuring = on_result, [], False
-        self.mouse = RawMouse()
+        self.mouse = shared_mouse()
         self.cm = tk.StringVar(value="10")
         row = tk.Frame(self, bg="#111")
         row.pack(anchor="w")
@@ -139,8 +150,12 @@ class DpiMeter(tk.Frame):
         if len(self.results) >= 3 and statistics.pstdev(self.results) / dpi > 0.05:
             text += "\nLas medidas varian mas de 5%: mueve mas recto y sin levantar el raton."
         self.out.config(text=text, fg="#9f9")
-        if self.on_result and len(self.results) >= 3:
-            self.on_result(round(dpi))
+        if len(self.results) >= 3:
+            import cs2_optimizer  # aqui y no arriba: cs2_optimizer importa este modulo en sus tests
+            from datetime import date
+            cs2_optimizer.save_settings(dpi=round(dpi), dpi_date=date.today().isoformat())
+            if self.on_result:
+                self.on_result(round(dpi))
 
     def tick(self):
         if self.measuring:

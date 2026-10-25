@@ -17,6 +17,7 @@ NO_WINDOW = 0x08000000 if os.name == "nt" else 0  # sin ventanas de consola cuan
 SDR_URL = "https://api.steampowered.com/ISteamApps/GetSDRConfig/v1/?appid=730"
 FALLBACK_HOSTS = ["1.1.1.1", "8.8.8.8"]
 HISTORY = Path(os.environ.get("APPDATA", Path.home())) / "cs2-optimizer" / "history.json"
+SETTINGS = HISTORY.with_name("settings.json")  # DPI medido con el medidor
 TIERS = ["baja", "media", "alta"]
 POWER_FAST = ("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "e9a42b02-d5df-448d-aa00-03f14749eb61")  # alto / maximo rendimiento
 VENDORS = {"4318": "NVIDIA", "4098": "AMD", "32902": "Intel"}
@@ -204,6 +205,72 @@ def video_value(text, key):
     return m.group(1) if m else None
 
 
+def load_settings():
+    try:
+        return json.loads(SETTINGS.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def save_settings(**kw):
+    SETTINGS.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS.write_text(json.dumps({**load_settings(), **kw}, indent=1))
+
+
+def parse_sens(text):
+    m = re.search(r'^\s*"?sensitivity"?\s+"?([\d.]+)', text, re.M)
+    return float(m.group(1)) if m else None
+
+
+def detect_sens():
+    """El autoexec manda (se ejecuta al iniciar); si no hay, la config guardada por CS2."""
+    cfg, steam = find_cfg_dir(), steam_dir()
+    files = [cfg / "autoexec.cfg"] if cfg else []
+    if steam:
+        files += sorted(steam.glob("userdata/*/730/local/cfg/cs2_user_convars_0_slot0.vcfg"),
+                        key=lambda f: f.stat().st_mtime, reverse=True)
+    for f in files:
+        if f.exists() and (s := parse_sens(f.read_text(errors="ignore"))):
+            return s, f.name
+    return None, None
+
+
+def machenike_dpi(profile_text):
+    """DPI del nivel activo en un perfil .psf de Machenike (codigo = DPI/50 - 1)."""
+    level = re.search(r"CurrentDPILevelValue=(\w+)", profile_text)
+    if not level:
+        return None
+    code = re.search(rf"XYSetting{int(level.group(1), 16) + 1}Value=(\w+)", profile_text)
+    return (int(code.group(1), 16) + 1) * 50 if code else None
+
+
+def detect_dpi():
+    """Prioridad: ultima medicion con el medidor > perfil del driver Machenike > desconocido."""
+    s = load_settings()
+    if s.get("dpi"):
+        return s["dpi"], f"medido el {s.get('dpi_date', '?')}"
+    for cfg in Path(os.environ.get("APPDATA", "")).glob("GamingMouseData*/config/config.ini"):
+        ini = cfg.read_bytes().decode("utf-16", errors="ignore")
+        n = re.search(r"CurrentProfile=(\d+)", ini)
+        prof = cfg.with_name(f"default{n.group(1) if n else 0}.psf")
+        if prof.exists() and (dpi := machenike_dpi(prof.read_bytes().decode("utf-16", errors="ignore"))):
+            return dpi, "driver Machenike (si lo cambiaste con el boton del raton, usa el medidor)"
+    return None, None
+
+
+def set_autoexec_sens(sens):
+    """Cambia (o agrega) la linea sensitivity del autoexec instalado. Devuelve la ruta o None."""
+    cfg = find_cfg_dir()
+    f = cfg / "autoexec.cfg" if cfg else None
+    if not f or not f.exists():
+        return None
+    line = f"sensitivity {sens}                  // ajustada por el test de sensibilidad"
+    text = f.read_text()
+    new, n = re.subn(r"^sensitivity .*$", line, text, flags=re.M)
+    f.write_text(new if n else f"{text.rstrip()}\n{line}\n")
+    return f
+
+
 def cs2_running():
     return "cs2.exe" in sh(["tasklist", "/FI", "IMAGENAME eq cs2.exe"]).lower()
 
@@ -270,6 +337,7 @@ def trend(prev, entry):
 
 def autoexec(hw, net, buf, dpi, sens, cap, mm_ping):
     mm = f"mm_dedicated_search_maxping {mm_ping}   // tu mejor region + margen\n" if mm_ping else ""
+    sens_line = f"sensitivity {sens}                  // DPI {dpi or '?'}\n" if sens else ""
     return f"""// Generado por CS2 Optimizer | GPU {hw['gpu']} | {hw['hz']} Hz | ping {net['ping']} ms
 // Red
 rate 786432                       // maximo de CS2
@@ -279,8 +347,7 @@ fps_max {cap}                         // 0 = sin limite (con Reflex el driver ev
 fps_max_ui 120
 engine_low_latency_sleep_after_client_tick true
 // Raton (sin aceleracion)
-sensitivity {sens}                  // DPI {dpi}
-m_yaw 0.022
+{sens_line}m_yaw 0.022
 m_pitch 0.022
 zoom_sensitivity_ratio 1.0
 // Telemetria en HUD (fps, ping, perdida real con el servidor)
@@ -320,6 +387,11 @@ def run(o, log=print):
     video_text = video_path.read_bytes().decode(errors="ignore") if video_path else ""
     base_tier = gpu_tier(hw["gpu"])
     tier = adjust_tier(base_tier, hw["hz"], o.fps_low)
+    sens_src = dpi_src = "lo indicaste tu"
+    if not o.sens:
+        o.sens, sens_src = detect_sens()
+    if not o.dpi:
+        o.dpi, dpi_src = detect_dpi()
 
     log("Midiendo ping a todas las regiones de Valve...")
     relays = scan_relays()
@@ -334,7 +406,7 @@ def run(o, log=print):
     buf = net_buffer(net)
     mm_ping = max_mm_ping(net["ping"]) if net["ping"] is not None else None
     cap = fps_cap(o.fps_avg, o.fps_low)
-    edpi, cm360, tip = sens_info(o.dpi, o.sens)
+    recoil = (sens_info(o.dpi, o.sens) if o.dpi and o.sens else None)
 
     out = Path("out")
     out.mkdir(exist_ok=True)
@@ -353,7 +425,11 @@ def run(o, log=print):
     t = trend(save_history(entry), entry)
     if t:
         log("   " + t)
-    log(f"\n== Recoil ==  eDPI {edpi} | {cm360} cm/360. {tip}")
+    log(f"\n== Raton ==  DPI {o.dpi or 'desconocido'} ({dpi_src}) | sensibilidad {o.sens or 'desconocida'} ({sens_src})")
+    if recoil:
+        log(f"   eDPI {recoil[0]} | {recoil[1]} cm/360. {recoil[2]}")
+    else:
+        log("   Mide tu DPI con el medidor (python dpi_meter.py o el boton de la GUI) para calcular tu eDPI.")
     log("   Entrena con practice.cfg en el juego y con el entrenador fuera del juego (recoil_trainer.py).")
     log(f"\n== FPS ==  fps_max {cap}" + ("" if o.fps_low else f"\n   {BENCH_HELP}"))
 
@@ -405,22 +481,28 @@ def test():
     assert adjust_tier("alta", 240, None) == "alta" and adjust_tier("baja", 60, 50) == "baja"
     assert fps_cap(500, 300) == 0 and fps_cap(500, 200) == 400 and fps_cap(None, None) == 0
     assert sens_info(800, 1.25)[0] == 1000
+    assert parse_sens('\t\t"sensitivity"\t\t"1.25"\n') == 1.25 and parse_sens("sensitivity 1.0   // x\n") == 1.0
+    assert parse_sens("zoom_sensitivity_ratio 1.0\n") is None
+    psf = "CurrentDPILevelValue=01\nXYSetting1Value=000F\nXYSetting2Value=001F\nXYSetting6Value=0207\n"
+    assert machenike_dpi(psf) == 1600 and machenike_dpi(psf.replace("=01", "=05")) == 26000
+    assert machenike_dpi("nada") is None
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "cs2_video.txt"
         f.write_bytes(b'"video.cfg"\n{\n\t"setting.mat_vsync"\t\t"1"\n\t"setting.msaa_samples"\t\t"4"\n}\n')
         assert apply_video(f, {"mat_vsync": 0, "msaa_samples": 4, "no_existe": 1}) == {"mat_vsync": ("1", "0")}
         assert b'"setting.mat_vsync"\t\t"0"' in f.read_bytes() and len(list(Path(d).glob("*.bak"))) == 1
         assert apply_video(f, {"mat_vsync": 0}) == {}
-    import dpi_meter, recoil_trainer
+    import dpi_meter, recoil_trainer, sens_test
     recoil_trainer.test()
     dpi_meter.test()
+    sens_test.test()
     print("ok")
 
 
 def main():
     ap = argparse.ArgumentParser(description="CS2 Optimizer")
-    ap.add_argument("--dpi", type=int, default=800)
-    ap.add_argument("--sens", type=float, default=1.25)
+    ap.add_argument("--dpi", type=int, help="por defecto: ultima medicion o perfil del driver")
+    ap.add_argument("--sens", type=float, help="por defecto: la que tienes en CS2")
     ap.add_argument("--fps-avg", type=int, help="FPS medio del benchmark")
     ap.add_argument("--fps-low", type=int, help="1%% low del benchmark")
     ap.add_argument("--install", action="store_true", help="copia autoexec/practice a la carpeta cfg de CS2")

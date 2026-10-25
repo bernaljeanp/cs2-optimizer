@@ -14,6 +14,8 @@ Analiza tu PC, Windows y tu conexión a los servidores de Valve, y genera la con
 | **Video** | Tu `cs2_video.txt` actual | Lo reescribe con backup `.bak`: Reflex + Boost, MSAA, sombras… (V-Sync no se toca: ON con G-Sync/FreeSync, OFF sin él) |
 | **Windows** | Wi-Fi vs cable, plan de energía, aceleración del ratón, modo juego, HAGS, antigüedad del driver, **CS2 usando la GPU integrada** en portátiles | Te dice qué cambiar (no toca Windows) |
 | **DPI real** | Counts del ratón vía Raw Input al moverlo una distancia medida | Te dice tu DPI real (los sensores se desvían un 2–10% del valor anunciado) y lo usa para el eDPI |
+| **Autodetección** | Tu sensibilidad (autoexec o config de CS2) y tu DPI (última medición o perfil del driver Machenike) | Rellena los campos solo: no hace falta escribir nada |
+| **Test de sensibilidad** | Tu estilo: 20 flicks + 12 s de tracking en una cámara que simula la de CS2 | Detecta overshoot/undershoot y retraso, y recomienda la sensibilidad (máx. ±20% por test) |
 | **Recoil** | eDPI y cm/360 | `practice.cfg` para entrenar spray en el juego + entrenador fuera del juego con nota |
 | **Historial** | Guarda cada medición | Compara tu ping/jitter con mediciones anteriores |
 
@@ -25,7 +27,8 @@ Analiza tu PC, Windows y tu conexión a los servidores de Valve, y genera la con
 
 ```bash
 python gui.py                                      # interfaz gráfica
-python cs2_optimizer.py --dpi 800 --sens 1.25      # línea de comandos, genera ./out
+python cs2_optimizer.py                            # detecta DPI y sensibilidad solo, genera ./out
+python sens_test.py                                # test de sensibilidad (lee tu estilo)
 python cs2_optimizer.py --dpi 800 --sens 1.25 --install --apply-video --fps-avg 420 --fps-low 210
 python recoil_trainer.py 1.25                      # entrenador, con tu sensibilidad
 ```
@@ -38,6 +41,14 @@ python recoil_trainer.py 1.25                      # entrenador, con tu sensibil
 
 Después, en Steam → CS2 → Propiedades → Opciones de lanzamiento: `+exec autoexec`.
 Para practicar spray: crea una partida offline y escribe `exec practice` en la consola.
+
+## Test de sensibilidad
+
+`python sens_test.py`, o el botón *Test de sensibilidad*. Se abre a pantalla completa con una mira como la de CS2: haz clic en 20 objetivos lo más rápido que puedas y después sigue uno en movimiento durante 12 segundos. La cámara usa tus counts de ratón × tu sensibilidad × 0.022 y el FOV de CS2, así que el resultado no depende del DPI.
+
+- Si en los flicks **te pasas** del objetivo, tu sensibilidad es alta; si **te quedas corto** y corriges, es baja.
+- Te muestra tu estilo (agresivo, equilibrado o preciso), tu porcentaje de aciertos y si en tracking vas por detrás o por delante del objetivo.
+- Con **A** aplicas la sensibilidad recomendada al `autoexec.cfg`. Repite el test 2–3 veces antes de cambiarla.
 
 ## Medidor de DPI
 

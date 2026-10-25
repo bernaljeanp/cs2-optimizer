@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import cs2_optimizer as core
 import dpi_meter
 import recoil_trainer
+import sens_test
 
 BG, FG = "#111", "#ddd"
 
@@ -20,7 +21,9 @@ def main():
     form = tk.Frame(root, bg=BG)
     form.pack(fill="x", padx=10, pady=8)
     fields = {}
-    for col, (key, label, default) in enumerate([("dpi", "DPI", "800"), ("sens", "Sensibilidad", "1.25"),
+    dpi, dpi_src = core.detect_dpi()
+    sens, sens_src = core.detect_sens()
+    for col, (key, label, default) in enumerate([("dpi", "DPI", dpi or ""), ("sens", "Sensibilidad", sens or ""),
                                                  ("fps_avg", "FPS medio", ""), ("fps_low", "1% low", "")]):
         tk.Label(form, text=label, fg=FG, bg=BG).grid(row=0, column=col, sticky="w", padx=4)
         fields[key] = tk.Entry(form, width=10)
@@ -44,8 +47,6 @@ def main():
         try:
             opts = SimpleNamespace(dpi=num("dpi", int), sens=num("sens", float), fps_avg=num("fps_avg", int),
                                    fps_low=num("fps_low", int), install=install.get(), apply_video=video.get())
-            if not (opts.dpi and opts.sens):
-                raise ValueError("falta DPI o sensibilidad")
         except ValueError as e:
             out.insert("end", f"Revisa los campos: {e}\n")
             return
@@ -94,13 +95,32 @@ def main():
             win.destroy()
             out.insert("end", f"Medidor de DPI no disponible: {e}\n")
 
+    def sens_check():
+        try:
+            sens = num("sens", float)
+        except ValueError:
+            sens = None
+        if not sens:
+            out.insert("end", "Pon tu sensibilidad de CS2 antes del test.\n")
+            return
+
+        def apply(rec):
+            fields["sens"].delete(0, "end")
+            fields["sens"].insert(0, str(rec))
+            f = core.set_autoexec_sens(rec)
+            out.insert("end", f"Sensibilidad {rec} " + (f"guardada en {f}\n" if f else "(instala la config para guardarla)\n"))
+        sens_test.SensTest(root, sens, apply)
+
     bar = tk.Frame(form, bg=BG)
     bar.grid(row=1, column=4, rowspan=2, padx=12)
     run_btn = tk.Button(bar, text="Analizar y optimizar", command=analyze, bg="#2a6", fg="white", width=20)
     run_btn.pack(pady=2)
     tk.Button(bar, text="Entrenador de recoil", command=trainer, bg="#246", fg="white", width=20).pack(pady=2)
     tk.Button(bar, text="Medir DPI real", command=meter, bg="#246", fg="white", width=20).pack(pady=2)
-    out.insert("end", "Rellena DPI y sensibilidad y pulsa 'Analizar y optimizar'.\n" + core.BENCH_HELP + "\n")
+    tk.Button(bar, text="Test de sensibilidad", command=sens_check, bg="#a52", fg="white", width=20).pack(pady=2)
+    out.insert("end", f"DPI detectado: {dpi or 'desconocido'} ({dpi_src or 'usa Medir DPI real'})\n"
+                      f"Sensibilidad detectada: {sens or 'desconocida'} ({sens_src or 'no encontre la config de CS2'})\n"
+                      "Pulsa 'Analizar y optimizar'.\n" + core.BENCH_HELP + "\n")
     poll()
     root.mainloop()
 
