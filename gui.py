@@ -4,6 +4,7 @@ from tkinter import scrolledtext
 from types import SimpleNamespace
 
 import cs2_optimizer as core
+import dpi_meter
 import recoil_trainer
 
 BG, FG = "#111", "#ddd"
@@ -79,11 +80,26 @@ def main():
             sens = 1.25
         recoil_trainer.Trainer(win, sens).pack()
 
+    def meter():
+        win = tk.Toplevel(root)
+        win.title("Medidor de DPI")
+        win.configure(bg=BG)
+
+        def got(dpi):
+            fields["dpi"].delete(0, "end")
+            fields["dpi"].insert(0, str(dpi))
+        try:
+            dpi_meter.DpiMeter(win, got).pack()
+        except OSError as e:
+            win.destroy()
+            out.insert("end", f"Medidor de DPI no disponible: {e}\n")
+
     bar = tk.Frame(form, bg=BG)
     bar.grid(row=1, column=4, rowspan=2, padx=12)
     run_btn = tk.Button(bar, text="Analizar y optimizar", command=analyze, bg="#2a6", fg="white", width=20)
     run_btn.pack(pady=2)
     tk.Button(bar, text="Entrenador de recoil", command=trainer, bg="#246", fg="white", width=20).pack(pady=2)
+    tk.Button(bar, text="Medir DPI real", command=meter, bg="#246", fg="white", width=20).pack(pady=2)
     out.insert("end", "Rellena DPI y sensibilidad y pulsa 'Analizar y optimizar'.\n" + core.BENCH_HELP + "\n")
     poll()
     root.mainloop()

@@ -13,6 +13,7 @@ Analiza tu PC, Windows y tu conexión a los servidores de Valve, y genera la con
 | **Benchmark** | FPS medio y 1% low que introduces | Corrige la gama según tus FPS reales y limita `fps_max` si el frametime es inestable |
 | **Video** | Tu `cs2_video.txt` actual | Lo reescribe con backup `.bak`: V-Sync off, Reflex + Boost, MSAA, sombras… |
 | **Windows** | Wi-Fi vs cable, plan de energía, aceleración del ratón, modo juego, HAGS, antigüedad del driver, **CS2 usando la GPU integrada** en portátiles | Te dice qué cambiar (no toca Windows) |
+| **DPI real** | Counts del ratón vía Raw Input al moverlo una distancia medida | Te dice tu DPI real (los sensores se desvían un 2–10% del valor anunciado) y lo usa para el eDPI |
 | **Recoil** | eDPI y cm/360 | `practice.cfg` para entrenar spray en el juego + entrenador fuera del juego con nota |
 | **Historial** | Guarda cada medición | Compara tu ping/jitter con mediciones anteriores |
 
@@ -37,6 +38,12 @@ python recoil_trainer.py 1.25                      # entrenador, con tu sensibil
 
 Después, en Steam → CS2 → Propiedades → Opciones de lanzamiento: `+exec autoexec`.
 Para practicar spray: crea una partida offline y escribe `exec practice` en la consola.
+
+## Medidor de DPI
+
+`python dpi_meter.py`, o el botón *Medir DPI real* en la interfaz. Pon una regla, pulsa ESPACIO, mueve el ratón en línea recta la distancia indicada y pulsa ESPACIO otra vez. Con 3 medidas usa la mediana y rellena el DPI en la interfaz. Lee Raw Input, igual que CS2, así que no le afectan la aceleración ni la velocidad del puntero de Windows.
+
+**Cambiar el DPI dentro del ratón:** cada fabricante usa un protocolo USB propio y la mayoría no está documentado. Por eso el programa no escribe en el firmware: cambia el DPI con el botón del ratón o con su software y confírmalo con el medidor.
 
 ## Entrenador de recoil
 

@@ -409,8 +409,9 @@ def test():
         assert apply_video(f, {"mat_vsync": 0, "msaa_samples": 4, "no_existe": 1}) == {"mat_vsync": ("1", "0")}
         assert b'"setting.mat_vsync"\t\t"0"' in f.read_bytes() and len(list(Path(d).glob("*.bak"))) == 1
         assert apply_video(f, {"mat_vsync": 0}) == {}
-    import recoil_trainer
+    import dpi_meter, recoil_trainer
     recoil_trainer.test()
+    dpi_meter.test()
     print("ok")
 
 
