@@ -1,0 +1,6 @@
+out/
+*.bak
+build/
+dist/
+*.spec
+__pycache__/
