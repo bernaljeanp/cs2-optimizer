@@ -11,7 +11,7 @@ Analiza tu PC, Windows y tu conexión a los servidores de Valve, y genera la con
 | **Red** | Ping, jitter y pérdida a **todas las regiones de Valve** (lista oficial SDR de Steam) | `cl_net_buffer_ticks`, `rate`, ping máximo de matchmaking según tu mejor región |
 | **Hardware** | GPU, RAM, núcleos, Hz del monitor | Preset de video por gama (baja / media / alta) |
 | **Benchmark** | FPS medio y 1% low que introduces | Corrige la gama según tus FPS reales y limita `fps_max` si el frametime es inestable |
-| **Video** | Tu `cs2_video.txt` actual | Lo reescribe con backup `.bak`: V-Sync off, Reflex + Boost, MSAA, sombras… |
+| **Video** | Tu `cs2_video.txt` actual | Lo reescribe con backup `.bak`: Reflex + Boost, MSAA, sombras… (V-Sync no se toca: ON con G-Sync/FreeSync, OFF sin él) |
 | **Windows** | Wi-Fi vs cable, plan de energía, aceleración del ratón, modo juego, HAGS, antigüedad del driver, **CS2 usando la GPU integrada** en portátiles | Te dice qué cambiar (no toca Windows) |
 | **DPI real** | Counts del ratón vía Raw Input al moverlo una distancia medida | Te dice tu DPI real (los sensores se desvían un 2–10% del valor anunciado) y lo usa para el eDPI |
 | **Recoil** | eDPI y cm/360 | `practice.cfg` para entrenar spray en el juego + entrenador fuera del juego con nota |

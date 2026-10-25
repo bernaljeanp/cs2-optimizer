@@ -33,8 +33,11 @@ VIDEO = {
              "r_texturefilteringquality": 1, "shaderquality": 0, "videocfg_particle_detail": 0,
              "videocfg_ao_detail": 0, "videocfg_hdr_detail": 3, "videocfg_fsr_detail": 2},
 }
-VIDEO_ALWAYS = {"mat_vsync": 0, "r_low_latency": 2, "fullscreen": 1, "r_csgo_cmaa_enable": 0,
-                "videocfg_dynamic_shadows": 1}  # Reflex+Boost, sin V-Sync, sombras de jugadores visibles
+# Reflex+Boost y sombras de jugadores visibles. mat_vsync no se toca: con G-Sync/FreeSync va ON (Reflex limita
+# los FPS bajo los Hz), sin VRR va OFF. ponytail: no detectamos VRR (requiere NVAPI); se avisa al usuario.
+VIDEO_ALWAYS = {"r_low_latency": 2, "fullscreen": 1, "r_csgo_cmaa_enable": 0, "videocfg_dynamic_shadows": 1}
+VSYNC_TIP = ("Con G-Sync/FreeSync: V-Sync ACTIVADO + Reflex (Reflex limita los FPS bajo tus Hz, sin tearing). "
+             "Sin G-Sync: V-Sync DESACTIVADO.")
 
 
 def sh(args):
@@ -234,8 +237,7 @@ def windows_checks(hw, video_text):
         if hw["has_dgpu"] and vendor == "Intel":
             tips.append("CS2 esta usando la GPU INTEGRADA. Panel NVIDIA/AMD o Config > Pantalla > Graficos: "
                         "asigna cs2.exe a 'Alto rendimiento'.")
-        if video_value(video_text, "setting.mat_vsync") == "1":
-            tips.append("V-Sync activado en CS2: agrega input lag. --apply-video lo desactiva.")
+        tips.append(VSYNC_TIP)
         if video_value(video_text, "setting.r_low_latency") in ("0", None):
             tips.append("NVIDIA Reflex desactivado en CS2. --apply-video lo pone en Activado + Boost.")
     return tips
